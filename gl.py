@@ -172,8 +172,7 @@ class CameraAR(mglw.WindowConfig):
         Render the frame to a screen-sized rectange. 
         ---------------------------------------------------------------
         """
-        
-        fps = 1 / frame_time
+    
 
         ret, frame = self.capture.read()
         # Solve the landmarks in world space
@@ -189,7 +188,7 @@ class CameraAR(mglw.WindowConfig):
                     for l in hand_landmarks:
                         cv2.circle(frame, (int(l[0]), int(l[1])), 3, (0, 0, 255), 2)
                         
-        cv2.putText(frame, str(int(fps))+" FPS", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        # cv2.putText(frame, str(self.grabbed), (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         frame = cv2.flip(frame, 0)
         frame = cv2.flip(frame, 1)
         self.texture1.write(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB).tobytes())
@@ -236,7 +235,7 @@ class CameraAR(mglw.WindowConfig):
         grabbed = False
         indexPos = [0,0,0]
         
-        pinch_threshold = 3.0
+        pinch_threshold = 4.0
         grab_threshold = 8.0
         for world_landmarks in world_landmarks_list:
             if not pinched and np.linalg.norm(world_landmarks[4] - world_landmarks[8]) <= pinch_threshold:
@@ -254,6 +253,14 @@ class CameraAR(mglw.WindowConfig):
         # Note we have to set the OpenGL projection matrix by following parameters from the OpenCV camera matrix, i.e., the field of view.
         # You can use Matrix44.perspective_projection function, and set the parameters accordingly. Note that the fov must be computed based on the camera matrix. See prediction.py.
 
+        self.color.value = (1.0, 1.0, 1.0)
+        scale = Matrix44.from_scale((3, 3, 3))
+        if pinched:  # A bit of feedback when the object is grabbed
+            self.color.value = (1.0, 0.0, 0.0)
+            if grabbed:
+                self.object_pos = indexPos
+                scale = Matrix44.from_scale((2, 2, 2))
+                
         # In this example, a random FOV value is set. Do not use this value in your final program.
         proj = Matrix44.perspective_projection(self.fov, self.aspect_ratio, 0.1, 1000)
 
@@ -265,13 +272,6 @@ class CameraAR(mglw.WindowConfig):
 
         # Scale the object up for easy viewing
 
-        self.color.value = (1.0, 1.0, 1.0)
-        scale = Matrix44.from_scale((3, 3, 3))
-        if pinched:  # A bit of feedback when the object is grabbed
-            self.color.value = (1.0, 0.0, 0.0)
-            if grabbed:
-                self.object_pos = indexPos
-                scale = Matrix44.from_scale((2, 2, 2))
         mvp = proj * translate * rotate * scale
         self.light.value = (10, 10, 10)
         self.mvp.write(mvp.astype('f4'))
@@ -292,8 +292,8 @@ class CameraAR(mglw.WindowConfig):
                 self.mvp.write(mvp.astype('f4'))
                 self.vao_marker.render()
                 
-        del world_landmarks_list
-        del detection_result
+        # del world_landmarks_list
+        # del detection_result
         
 
 
